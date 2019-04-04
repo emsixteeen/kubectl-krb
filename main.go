@@ -135,6 +135,13 @@ func getExecCredential(token string, err error, exp *time.Time) (string) {
 }
 
 func printError(err error) {
+  msg := err.Error()
+
+  if len(msg) > 120 {
+    msg = msg[:120] + "..."
+    err = fmt.Errorf(msg)
+  }
+
   logger.Printf("error: %s", err)
   fmt.Print(getExecCredential("", err, nil))
   fmt.Fprintf(os.Stderr, "error: %s\n", err)
