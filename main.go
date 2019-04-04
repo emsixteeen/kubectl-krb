@@ -31,9 +31,13 @@ const (
   EnvOidcScope = "OIDC_SCOPE"
   EnvUserAgent = "USER_AGENT"
   EnvDebugEnabled = "DEBUG"
+  EnvMaxErrorLength = "MAX_ERROR_LENGTH"
 )
 
-var logger *log.Logger
+var (
+  logger *log.Logger
+  maxErrorLength int
+)
 
 type ExecCredential struct {
   ApiVersion string `json:"apiVersion"`
@@ -48,11 +52,18 @@ type ExecCredentialStatus struct {
 }
 
 func init() {
-  v, err := strconv.ParseBool(os.Getenv(EnvDebugEnabled))
-  if v == false || err != nil {
+  if v, err := strconv.ParseBool(os.Getenv(EnvDebugEnabled)); err != nil || v == false {
     logger = log.New(ioutil.Discard, "debug: ", log.LstdFlags)
   } else {
     logger = log.New(os.Stderr, "debug: ", log.LstdFlags)
+  }
+
+  if v, err := strconv.Atoi(os.Getenv(EnvMaxErrorLength)); err != nil {
+    maxErrorLength = 120
+    logger.Printf("error parsing env %s: %s, using %d", EnvMaxErrorLength, err, maxErrorLength)
+  } else {
+    maxErrorLength = v
+    logger.Printf("parsed %s as %d", EnvMaxErrorLength, maxErrorLength)
   }
 }
 
@@ -142,8 +153,8 @@ func getExecCredential(token string, err error, exp *time.Time) (string) {
 func printError(err error) {
   msg := err.Error()
 
-  if len(msg) > 120 {
-    msg = msg[:120] + "..."
+  if len(msg) > maxErrorLength {
+    msg = msg[:maxErrorLength] + "..."
     err = fmt.Errorf(msg)
   }
 
