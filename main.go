@@ -312,7 +312,11 @@ func main() {
 
   httpClient := &http.Client{
     CheckRedirect: func(req *http.Request, via []*http.Request) error {
-      return http.ErrUseLastResponse
+      if strings.HasPrefix(req.URL.String(), oidcRedirect) {
+        return http.ErrUseLastResponse
+      }
+
+      return nil
     },
   }
 
