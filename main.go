@@ -306,34 +306,35 @@ func main() {
   }
 
   resp.Body.Close()
+
   if resp.StatusCode != http.StatusFound {
     printError(fmt.Errorf("expected a 302, got %s", resp.Status))
     os.Exit(1)
-  } else {
-    location := resp.Header.Get("Location")
-
-    if location == "" {
-      printError(fmt.Errorf("received 302, but no location found"))
-      os.Exit(1)
-    }
-
-    if strings.HasPrefix(location, oidcRedirect) != true {
-      printError(fmt.Errorf("expected prefix of %s, but received %s", oidcRedirect, location))
-      os.Exit(1)
-    }
-
-    token, err := findToken(location)
-    if err != nil {
-      printError(fmt.Errorf("could not locate token: %s", err))
-      os.Exit(1)
-    }
-
-    token, expiration, err := validateToken(token)
-    if err != nil {
-      printError(fmt.Errorf("error validating: %s", err))
-      os.Exit(1)
-    }
-
-    printToken(token, expiration)
   }
+
+  location := resp.Header.Get("Location")
+
+  if location == "" {
+    printError(fmt.Errorf("received 302, but no location found"))
+    os.Exit(1)
+  }
+
+  if strings.HasPrefix(location, oidcRedirect) != true {
+    printError(fmt.Errorf("expected prefix of %s, but received %s", oidcRedirect, location))
+    os.Exit(1)
+  }
+
+  token, err := findToken(location)
+  if err != nil {
+    printError(fmt.Errorf("could not locate token: %s", err))
+    os.Exit(1)
+  }
+
+  token, expiration, err := validateToken(token)
+  if err != nil {
+    printError(fmt.Errorf("error validating: %s", err))
+    os.Exit(1)
+  }
+
+  printToken(token, expiration)
 }
