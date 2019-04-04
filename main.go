@@ -194,12 +194,12 @@ func validateToken(token string) (string, error) {
     return "", fmt.Errorf("malformed token, expected 3 parts, got %d", len(parts))
   }
 
-  partOne, err := base64.RawStdEncoding.DecodeString(parts[0])
+  partOne, err := base64.RawURLEncoding.DecodeString(parts[0])
   if err != nil {
     return "", fmt.Errorf("unable to base64 decode headers: %s", err)
   }
 
-  partTwo, err := base64.RawStdEncoding.DecodeString(parts[1])
+  partTwo, err := base64.RawURLEncoding.DecodeString(parts[1])
   if err != nil {
     return "", fmt.Errorf("unable to base64 decode claims: %s", err)
   }
