@@ -29,6 +29,7 @@ const (
   EnvOidcRedirectUri = "OIDC_REDIRECT_URI"
   EnvOidcResponseType = "OIDC_RESPONSE_TYPE"
   EnvOidcScope = "OIDC_SCOPE"
+  EnvUserAgent = "USER_AGENT"
   EnvDebugEnabled = "DEBUG"
 )
 
@@ -101,6 +102,10 @@ func getOidcRedirectUri() (string) {
 
 func getOidcResponseType() (string) {
   return getEnvDefault(EnvOidcResponseType, "token id_token")
+}
+
+func getUserAgent() (string) {
+  return getEnvDefault(EnvUserAgent, "")
 }
 
 func getOidcAuthUrl() (string, error) {
@@ -264,6 +269,8 @@ func main() {
   krbCache := getKrbCache(user.Uid)
   krbConfig := getKrbConfig()
 
+  userAgent := getUserAgent()
+
   cfg, err := config.Load(krbConfig)
   if err != nil {
     printError(err)
@@ -298,6 +305,10 @@ func main() {
 
   request.URL.RawQuery = requestUrl
   logger.Printf("request %s", request.URL)
+
+  if userAgent != "" {
+    request.Header.Set("User-Agent", userAgent)
+  }
 
   httpClient := &http.Client{
     CheckRedirect: func(req *http.Request, via []*http.Request) error {
