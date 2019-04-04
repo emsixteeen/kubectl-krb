@@ -270,7 +270,49 @@ func buildKrb5Config(in string) (cfg *config.Config, err error) {
   return nil, err
 }
 
+func getCachedToken(uid string) (string, *time.Time, error) {
+  path := fmt.Sprintf("%s/oidc_ct_%s", os.TempDir(), uid)
+
+  b, err := ioutil.ReadFile(path)
+  if err != nil {
+    return "", nil, fmt.Errorf("unable to load cached token: %s", path)
+  }
+
+  token, expiry, err := validateToken(string(b))
+  if err != nil {
+    return "", nil, fmt.Errorf("unable to validate cached token: %s", err)
+  }
+
+  if expiry.Before(time.Now()) {
+    return "", nil, fmt.Errorf("cached token expired at %s", expiry)
+  }
+
+  return token, expiry, nil
+}
+
+
+func writeCachedToken(t, uid string) (error) {
+  path := fmt.Sprintf("%s/oidc_ct_%s", os.TempDir(), uid)
+  return ioutil.WriteFile(path, []byte(t), 0600)
+}
+
 func main() {
+  user, err := user.Current()
+  if err != nil {
+    printError(err)
+    os.Exit(1)
+  }
+
+  // Try and get a cached token first
+  if token, expiration, err := getCachedToken(user.Uid); token != "" {
+    logger.Printf("loaded cached token")
+    printToken(token, expiration)
+    return
+  } else if err != nil {
+    logger.Printf("error getting cached token: %s", err)
+  }
+
+  // Otherwise we're here
   oidcAuthUrl, err := getOidcAuthUrl()
   if err != nil {
     printError(err)
@@ -278,12 +320,6 @@ func main() {
   }
 
   oidcClientId, err := getOidcClientId()
-  if err != nil {
-    printError(err)
-    os.Exit(1)
-  }
-
-  user, err := user.Current()
   if err != nil {
     printError(err)
     os.Exit(1)
@@ -383,6 +419,10 @@ func main() {
   if err != nil {
     printError(fmt.Errorf("error validating: %s", err))
     os.Exit(1)
+  }
+
+  if err := writeCachedToken(token, user.Uid); err != nil {
+    logger.Printf("error saving token: %s", err)
   }
 
   printToken(token, expiration)
