@@ -307,7 +307,7 @@ func main() {
 
   resp.Body.Close()
   if resp.StatusCode != http.StatusFound {
-    printError(fmt.Errorf("expected a 302, got %d", resp.StatusCode))
+    printError(fmt.Errorf("expected a 302, got %s", resp.Status))
     os.Exit(1)
   } else {
     location := resp.Header.Get("Location")
