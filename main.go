@@ -187,21 +187,21 @@ func findToken(loc string) (string, error) {
   return "", fmt.Errorf("unable to locate token")
 }
 
-func validateToken(token string) (string, error) {
+func validateToken(token string) (string, *time.Time, error) {
   // TODO: do real validation here
   parts := strings.Split(token, ".")
   if len(parts) != 3 {
-    return "", fmt.Errorf("malformed token, expected 3 parts, got %d", len(parts))
+    return "", nil, fmt.Errorf("malformed token, expected 3 parts, got %d", len(parts))
   }
 
   partOne, err := base64.RawURLEncoding.DecodeString(parts[0])
   if err != nil {
-    return "", fmt.Errorf("unable to base64 decode headers: %s", err)
+    return "", nil, fmt.Errorf("unable to base64 decode headers: %s", err)
   }
 
   partTwo, err := base64.RawURLEncoding.DecodeString(parts[1])
   if err != nil {
-    return "", fmt.Errorf("unable to base64 decode claims: %s", err)
+    return "", nil, fmt.Errorf("unable to base64 decode claims: %s", err)
   }
 
   var headerOut bytes.Buffer
@@ -214,7 +214,21 @@ func validateToken(token string) (string, error) {
   logger.Printf("claims:\n%s", claimsOut.Bytes())
   logger.Printf("signature:\n%s", parts[2])
 
-  return token, nil
+  expiration := getTokenExpiration(partTwo)
+  return token, expiration, nil
+}
+
+func getTokenExpiration(b []byte) (*time.Time) {
+  var claims struct {
+    Expiration int64 `json:"exp"`
+  }
+
+  if err := json.Unmarshal(b, &claims); err != nil {
+    return nil
+  }
+
+  t := time.Unix(claims.Expiration, 0)
+  return &t
 }
 
 func main() {
@@ -314,13 +328,12 @@ func main() {
       os.Exit(1)
     }
 
-    token, err = validateToken(token)
+    token, expiration, err := validateToken(token)
     if err != nil {
       printError(fmt.Errorf("error validating: %s", err))
       os.Exit(1)
     }
 
-    // TODO: add expiration
-    printToken(token, nil)
+    printToken(token, expiration)
   }
 }
