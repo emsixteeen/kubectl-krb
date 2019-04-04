@@ -243,6 +243,22 @@ func getTokenExpiration(b []byte) (*time.Time) {
   return &t
 }
 
+func buildKrb5Config(in string) (cfg *config.Config, err error) {
+  if strings.HasPrefix(in, "/") {
+    cfg, err = config.Load(in)
+    if err == nil {
+      return
+    }
+  }
+
+  cfg, err = config.NewConfigFromString(in)
+  if err == nil {
+    return
+  }
+
+  return nil, err
+}
+
 func main() {
   oidcAuthUrl, err := getOidcAuthUrl()
   if err != nil {
@@ -271,7 +287,7 @@ func main() {
 
   userAgent := getUserAgent()
 
-  cfg, err := config.Load(krbConfig)
+  cfg, err := buildKrb5Config(krbConfig)
   if err != nil {
     printError(err)
     os.Exit(1)
