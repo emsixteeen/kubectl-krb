@@ -12,6 +12,7 @@ import (
   "log"
   "net/http"
   "net/url"
+  "hash/crc32"
   "math/rand"
   "encoding/json"
   "encoding/base64"
@@ -270,9 +271,18 @@ func buildKrb5Config(in string) (cfg *config.Config, err error) {
   return nil, err
 }
 
-func getCachedToken(uid string) (string, *time.Time, error) {
-  path := fmt.Sprintf("%s/oidc_ct_%s", os.TempDir(), uid)
+func cachedTokenPath(uid string) (string) {
+  hash := crc32.NewIEEE()
+  for _, e := range os.Environ() {
+    hash.Write([]byte(e))
+  }
 
+  sum := hash.Sum([]byte{})
+  return fmt.Sprintf("%s/oidc_ct_%s_%08x", os.TempDir(), uid, sum)
+}
+
+func getCachedToken(uid string) (string, *time.Time, error) {
+  path := cachedTokenPath(uid)
   b, err := ioutil.ReadFile(path)
   if err != nil {
     return "", nil, fmt.Errorf("unable to load cached token: %s", path)
@@ -292,7 +302,7 @@ func getCachedToken(uid string) (string, *time.Time, error) {
 
 
 func writeCachedToken(t, uid string) (error) {
-  path := fmt.Sprintf("%s/oidc_ct_%s", os.TempDir(), uid)
+  path := cachedTokenPath(uid)
   return ioutil.WriteFile(path, []byte(t), 0600)
 }
 
