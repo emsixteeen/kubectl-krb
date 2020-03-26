@@ -32,6 +32,7 @@ const (
   EnvOidcScope = "OIDC_SCOPE"
   EnvOidcCache = "OIDC_CACHE"
   EnvOidcCacheUnique = "OIDC_CACHE_UNIQUE"
+  EnvOidcCacheVar = "OIDC_CACHE_VAR"
   EnvUserAgent = "USER_AGENT"
   EnvDebugEnabled = "DEBUG"
   EnvMaxErrorLength = "MAX_ERROR_LENGTH"
@@ -275,6 +276,12 @@ func buildKrb5Config(in string) (cfg *config.Config, err error) {
 
 func cachedTokenPath(uid string) (string) {
   path := getEnvDefault(EnvOidcCache, fmt.Sprintf("%s/oidc_ct_%s", os.TempDir(), uid))
+
+  if cacheVar := getEnvDefault(EnvOidcCacheVar, ""); cacheVar != "" {
+    if cacheVarValue := getEnvDefault(cacheVar, ""); cacheVarValue != "" {
+      path = fmt.Sprintf("%s_%s", path, cacheVarValue)
+    }
+  }
 
   if v, err := strconv.ParseBool(os.Getenv(EnvOidcCacheUnique)); err != nil || v == false {
     return path
