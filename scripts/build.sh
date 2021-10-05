@@ -1,4 +1,5 @@
 #!/bin/bash
+set -x
 
 tag=$(git describe --tags --abbrev=0)
 os=${os:-linux}
